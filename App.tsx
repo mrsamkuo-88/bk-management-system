@@ -351,21 +351,57 @@ const App: React.FC = () => {
                 />
             )}
 
-            {view.type === 'VENDOR_LINK' && (
-                <VendorConfirmation
-                    taskData={tasks.find(t => t.id === view.taskId)!}
-                    orderData={orders.find(o => o.id === tasks.find(t => t.id === view.taskId)?.orderId)!}
-                    assignee={getAssignee(view.taskId)!} // Pass the resolved assignee
-                    allTasks={tasks}
-                    vendors={vendors} // Pass vendors
-                    partTimers={partTimers} // Pass PTs
-                    onBack={() => setView({ type: 'LANDING' })}
-                    onSwitchTask={(tid) => setView({ type: 'VENDOR_LINK', taskId: tid })}
-                    onUpdateOrder={handleUpdateOrder}
-                    onUpdateProfile={handleVendorProfileSubmit}
-                    onUpdateTask={handleUpdateTask}
-                />
-            )}
+            {view.type === 'VENDOR_LINK' && (() => {
+                // Resolution Logic with Mock Fallback
+                const taskId = view.taskId;
+
+                // 1. Try Live Data
+                let task = tasks.find(t => t.id === taskId);
+                let order = task ? orders.find(o => o.id === task.orderId) : undefined;
+                let assignee = task ? getAssignee(taskId) : undefined;
+
+                // 2. Fallback to Mocks (for Landing Page Demos)
+                if (!task) {
+                    task = MOCK_TASKS.find(t => t.id === taskId);
+                    order = task ? MOCK_ORDERS.find(o => o.id === task.orderId) : undefined;
+                    // Mock Assignee Resolution
+                    if (task) {
+                        assignee = MOCK_VENDORS.find(v => v.id === task.vendorId) ||
+                            MOCK_PART_TIMERS.find(pt => pt.id === task.vendorId);
+                    }
+                }
+
+                if (!task || !order || !assignee) {
+                    return (
+                        <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-400 flex-col gap-4">
+                            <AlertTriangle size={48} className="text-yellow-500" />
+                            <div className="text-center">
+                                <h3 className="text-lg font-bold text-slate-700">找不到模擬任務</h3>
+                                <p className="text-sm">任務 ID ({taskId}) 不存在或資料已遺失。</p>
+                            </div>
+                            <button onClick={() => setView({ type: 'LANDING' })} className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors">
+                                返回首頁
+                            </button>
+                        </div>
+                    );
+                }
+
+                return (
+                    <VendorConfirmation
+                        taskData={task}
+                        orderData={order}
+                        assignee={assignee}
+                        allTasks={tasks.length > 0 ? tasks : MOCK_TASKS}
+                        vendors={vendors.length > 0 ? vendors : MOCK_VENDORS}
+                        partTimers={partTimers.length > 0 ? partTimers : MOCK_PART_TIMERS}
+                        onBack={() => setView({ type: 'LANDING' })}
+                        onSwitchTask={(tid) => setView({ type: 'VENDOR_LINK', taskId: tid })}
+                        onUpdateOrder={handleUpdateOrder}
+                        onUpdateProfile={handleVendorProfileSubmit}
+                        onUpdateTask={handleUpdateTask}
+                    />
+                );
+            })()}
 
             {view.type === 'CLIENT_SHARE_LINK' && (
                 <ClientServicePreview
