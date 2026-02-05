@@ -220,7 +220,7 @@ export const api = {
                 pricing_terms: vendor.pricingTerms,
                 description: vendor.description,
                 service_images: vendor.serviceImages,
-                pending_update: vendor.pendingUpdate
+                pending_update: vendor.pendingUpdate || null
             })
             .eq('id', vendor.id);
 
