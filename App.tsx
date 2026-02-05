@@ -297,22 +297,36 @@ const App: React.FC = () => {
                             </button>
 
                             {/* VENDOR DEMO */}
-                            <button onClick={() => setView({ type: 'VENDOR_LINK', taskId: 't-3' })} className="group relative bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl text-left hover:bg-white/10 transition-all hover:scale-[1.02]">
+                            <button onClick={() => {
+                                const realTask = tasks.find(t => vendors.some(v => v.id === t.vendorId));
+                                setView({ type: 'VENDOR_LINK', taskId: realTask ? realTask.id : 't-3' });
+                            }} className="group relative bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl text-left hover:bg-white/10 transition-all hover:scale-[1.02]">
                                 <div className="w-10 h-10 bg-rose-500/20 rounded-full flex items-center justify-center mb-4 group-hover:bg-rose-500 transition-colors">
                                     <ExternalLink className="text-rose-300 group-hover:text-white" size={20} />
                                 </div>
                                 <h3 className="text-lg font-bold mb-1 text-white">廠商視角 (模擬)</h3>
-                                <p className="text-slate-400 text-xs mb-3">模擬外部廠商收到的任務確認連結。</p>
+                                <p className="text-slate-400 text-xs mb-3">
+                                    {tasks.some(t => vendors.some(v => v.id === t.vendorId))
+                                        ? "進入最新一筆真實廠商任務。"
+                                        : "目前無真實任務，將顯示範例資料。"}
+                                </p>
                                 <div className="flex items-center gap-2 text-rose-300 text-xs font-bold">開啟連結 <ArrowRight size={14} /></div>
                             </button>
 
                             {/* PT DEMO */}
-                            <button onClick={() => setView({ type: 'VENDOR_LINK', taskId: 't-pt-demo' })} className="group relative bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl text-left hover:bg-white/10 transition-all hover:scale-[1.02]">
+                            <button onClick={() => {
+                                const realTask = tasks.find(t => partTimers.some(pt => pt.id === t.vendorId));
+                                setView({ type: 'VENDOR_LINK', taskId: realTask ? realTask.id : 't-pt-demo' });
+                            }} className="group relative bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl text-left hover:bg-white/10 transition-all hover:scale-[1.02]">
                                 <div className="w-10 h-10 bg-amber-500/20 rounded-full flex items-center justify-center mb-4 group-hover:bg-amber-500 transition-colors">
                                     <Briefcase className="text-amber-300 group-hover:text-white" size={20} />
                                 </div>
                                 <h3 className="text-lg font-bold mb-1 text-white">兼職視角 (模擬)</h3>
-                                <p className="text-slate-400 text-xs mb-3">模擬現場人員收到的工作確認連結。</p>
+                                <p className="text-slate-400 text-xs mb-3">
+                                    {tasks.some(t => partTimers.some(pt => pt.id === t.vendorId))
+                                        ? "進入最新一筆真實兼職任務。"
+                                        : "目前無真實任務，將顯示範例資料。"}
+                                </p>
                                 <div className="flex items-center gap-2 text-amber-300 text-xs font-bold">開啟連結 <ArrowRight size={14} /></div>
                             </button>
                         </div>
