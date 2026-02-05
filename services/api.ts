@@ -74,12 +74,47 @@ const mapTask = (row: any): VendorTask => ({
 });
 
 export const api = {
+    // --- Auth & Profile ---
+    signIn: async (email: string, password: string) => {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+        if (error) throw error;
+        return data.user;
+    },
+
+    signOut: async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+    },
+
+    getUserByEmail: async (email: string): Promise<{ type: 'VENDOR' | 'PART_TIMER' | 'ADMIN', data?: any }> => {
+        // 1. Check Vendor
+        const { data: vendor } = await supabase.from('vendors').select('*').eq('email', email).single();
+        if (vendor) return { type: 'VENDOR', data: mapVendor(vendor) };
+
+        // 2. Check PartTimer
+        const { data: pt } = await supabase.from('part_timers').select('*').eq('email', email).single();
+        if (pt) return { type: 'PART_TIMER', data: mapPartTimer(pt) };
+
+        // 3. Default to Admin if authenticated but not in vendor/pt tables
+        // (Assuming only trusted users exist in Supabase Auth)
+        return { type: 'ADMIN' };
+    },
+
     // --- Tasks ---
-    getTasks: async (): Promise<VendorTask[]> => {
-        const { data, error } = await supabase
+    getTasks: async (filter?: { vendorId?: string }): Promise<VendorTask[]> => {
+        let query = supabase
             .from('vendor_tasks')
             .select('*')
             .order('created_at', { ascending: false });
+
+        if (filter?.vendorId) {
+            query = query.eq('vendor_id', filter.vendorId);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.error('Error fetching tasks:', error);

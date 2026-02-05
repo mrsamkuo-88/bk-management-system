@@ -1,9 +1,12 @@
 
 // ... existing imports
+// ... existing imports
 import React, { useState } from 'react';
 import Dashboard from './components/Dashboard';
 import VendorConfirmation from './components/VendorConfirmation';
 import ClientServicePreview from './components/ClientServicePreview';
+import LoginForm from './components/LoginForm';
+import VendorPortal from './components/VendorPortal';
 import { Shield, Users, ArrowRight, ExternalLink, CheckCircle, AlertTriangle, Clock, Edit3, Briefcase, Lock, Database } from 'lucide-react';
 import { MOCK_TASKS, MOCK_VENDORS, MOCK_ORDERS, MOCK_PART_TIMERS } from './services/mockData';
 
@@ -14,6 +17,7 @@ import { api } from './services/api';
 type ViewState =
     | { type: 'LANDING' }
     | { type: 'DASHBOARD' }
+    | { type: 'VENDOR_PORTAL' }
     | { type: 'VENDOR_LINK', taskId: string }
     | { type: 'CLIENT_SHARE_LINK', vendorId: string }; // New Route
 
@@ -56,13 +60,30 @@ const App: React.FC = () => {
     }, []);
 
     // --- Auth Handlers ---
-    const handleLogin = (role: UserRole) => {
-        const user: User = role === UserRole.ADMIN
-            ? { id: 'u-admin', name: 'Alex Director', role: UserRole.ADMIN, title: '系統管理員 (CTO)', avatar: 'AD' }
-            : { id: 'u-ops', name: 'John Doe', role: UserRole.OPERATOR, title: '營運經理', avatar: 'JD' };
+    const handleLoginSuccess = (supabaseUser: any, roleType: 'VENDOR' | 'PART_TIMER' | 'ADMIN', profileData?: any) => {
+        let user: User;
 
+        if (roleType === 'ADMIN') {
+            user = {
+                id: supabaseUser.id,
+                name: supabaseUser.email || 'Admin',
+                role: UserRole.ADMIN,
+                title: '系統管理員',
+                avatar: 'AD'
+            };
+            setView({ type: 'DASHBOARD' });
+        } else {
+            // Vendor or PT
+            user = {
+                id: profileData.id,
+                name: profileData.name,
+                role: roleType === 'VENDOR' ? UserRole.VENDOR : UserRole.PART_TIMER,
+                title: profileData.role || (roleType === 'VENDOR' ? '合作廠商' : '兼職人員'),
+                avatar: profileData.name.substring(0, 2).toUpperCase()
+            };
+            setView({ type: 'VENDOR_PORTAL' });
+        }
         setCurrentUser(user);
-        setView({ type: 'DASHBOARD' });
     };
 
     // --- System Handlers (Admin Only) ---
@@ -273,62 +294,9 @@ const App: React.FC = () => {
                             <div className="text-sm text-slate-400 font-mono tracking-wider">SYSTEM V3.0 • CATERING CONTROL</div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150">
-
-                            {/* ADMIN LOGIN */}
-                            <button onClick={() => handleLogin(UserRole.ADMIN)} className="group relative bg-slate-800/80 backdrop-blur-md border border-slate-700 p-6 rounded-3xl text-left hover:bg-slate-700 hover:border-indigo-500 transition-all hover:scale-[1.02] shadow-xl">
-                                <div className="absolute top-4 right-4"><Lock size={16} className="text-slate-500" /></div>
-                                <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center mb-4 group-hover:bg-indigo-500 transition-colors">
-                                    <Database className="text-indigo-300 group-hover:text-white" size={20} />
-                                </div>
-                                <h3 className="text-lg font-bold mb-1 text-white">管理者登入</h3>
-                                <p className="text-slate-400 text-xs mb-3">最高權限：可執行系統備份與還原。</p>
-                                <div className="flex items-center gap-2 text-indigo-300 text-xs font-bold">進入系統 <ArrowRight size={14} /></div>
-                            </button>
-
-                            {/* OPERATOR LOGIN */}
-                            <button onClick={() => handleLogin(UserRole.OPERATOR)} className="group relative bg-white/10 backdrop-blur-md border border-white/10 p-6 rounded-3xl text-left hover:bg-white/20 transition-all hover:scale-[1.02] shadow-xl">
-                                <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-500 transition-colors">
-                                    <Users className="text-blue-300 group-hover:text-white" size={20} />
-                                </div>
-                                <h3 className="text-lg font-bold mb-1 text-white">操作者登入</h3>
-                                <p className="text-slate-400 text-xs mb-3">內部營運：管理訂單、廠商與指派任務。</p>
-                                <div className="flex items-center gap-2 text-blue-300 text-xs font-bold">進入系統 <ArrowRight size={14} /></div>
-                            </button>
-
-                            {/* VENDOR DEMO */}
-                            <button onClick={() => {
-                                const realTask = tasks.find(t => vendors.some(v => v.id === t.vendorId));
-                                setView({ type: 'VENDOR_LINK', taskId: realTask ? realTask.id : 't-3' });
-                            }} className="group relative bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl text-left hover:bg-white/10 transition-all hover:scale-[1.02]">
-                                <div className="w-10 h-10 bg-rose-500/20 rounded-full flex items-center justify-center mb-4 group-hover:bg-rose-500 transition-colors">
-                                    <ExternalLink className="text-rose-300 group-hover:text-white" size={20} />
-                                </div>
-                                <h3 className="text-lg font-bold mb-1 text-white">廠商視角 (模擬)</h3>
-                                <p className="text-slate-400 text-xs mb-3">
-                                    {tasks.some(t => vendors.some(v => v.id === t.vendorId))
-                                        ? "進入最新一筆真實廠商任務。"
-                                        : "目前無真實任務，將顯示範例資料。"}
-                                </p>
-                                <div className="flex items-center gap-2 text-rose-300 text-xs font-bold">開啟連結 <ArrowRight size={14} /></div>
-                            </button>
-
-                            {/* PT DEMO */}
-                            <button onClick={() => {
-                                const realTask = tasks.find(t => partTimers.some(pt => pt.id === t.vendorId));
-                                setView({ type: 'VENDOR_LINK', taskId: realTask ? realTask.id : 't-pt-demo' });
-                            }} className="group relative bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl text-left hover:bg-white/10 transition-all hover:scale-[1.02]">
-                                <div className="w-10 h-10 bg-amber-500/20 rounded-full flex items-center justify-center mb-4 group-hover:bg-amber-500 transition-colors">
-                                    <Briefcase className="text-amber-300 group-hover:text-white" size={20} />
-                                </div>
-                                <h3 className="text-lg font-bold mb-1 text-white">兼職視角 (模擬)</h3>
-                                <p className="text-slate-400 text-xs mb-3">
-                                    {tasks.some(t => partTimers.some(pt => pt.id === t.vendorId))
-                                        ? "進入最新一筆真實兼職任務。"
-                                        : "目前無真實任務，將顯示範例資料。"}
-                                </p>
-                                <div className="flex items-center gap-2 text-amber-300 text-xs font-bold">開啟連結 <ArrowRight size={14} /></div>
-                            </button>
+                        <div className="flex flex-col items-center justify-center w-full">
+                            {/* Unified Login Form */}
+                            <LoginForm onLoginSuccess={handleLoginSuccess} />
                         </div>
 
                         <div className="mt-12 text-center text-xs text-slate-500 font-mono">
@@ -362,6 +330,15 @@ const App: React.FC = () => {
                     onPreviewClientPage={handleNavigateToClientPreview}
                     onRestoreData={handleRestoreSystem}
                     onLogout={() => { setCurrentUser(null); setView({ type: 'LANDING' }); }}
+                />
+            )}
+
+            {view.type === 'VENDOR_PORTAL' && currentUser && (
+                <VendorPortal
+                    currentUser={vendors.find(v => v.id === currentUser.id) || partTimers.find(pt => pt.id === currentUser.id) || { id: currentUser.id, name: currentUser.name, phone: '', role: currentUser.role as any, description: 'User Profile' } as any}
+                    userType={currentUser.role === UserRole.VENDOR ? 'VENDOR' : 'PART_TIMER'}
+                    onLogout={() => { setCurrentUser(null); setView({ type: 'LANDING' }); }}
+                    onSelectTask={(taskId) => setView({ type: 'VENDOR_LINK', taskId })}
                 />
             )}
 

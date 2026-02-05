@@ -16,7 +16,9 @@ export enum PartTimeRole {
 // --- NEW: Permission Roles ---
 export enum UserRole {
   ADMIN = 'ADMIN',       // 最高權限：可備份還原、管理所有
-  OPERATOR = 'OPERATOR'  // 內部操作：可管理訂單任務、不可備份還原
+  OPERATOR = 'OPERATOR',  // 內部操作：可管理訂單任務、不可備份還原
+  VENDOR = 'VENDOR',      // 外部廠商：僅查看自己任務
+  PART_TIMER = 'PART_TIMER' // 兼職人員：僅查看自己任務
 }
 
 export interface User {
