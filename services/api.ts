@@ -273,5 +273,15 @@ export const api = {
         };
         const { error } = await supabase.from('part_timers').insert(dbPT);
         if (error) throw error;
+    },
+
+    deletePartTimer: async (ptId: string) => {
+        const { error } = await supabase.from('part_timers').delete().eq('id', ptId);
+        if (error) throw error;
+    },
+
+    deleteVendor: async (vendorId: string) => {
+        const { error } = await supabase.from('vendors').delete().eq('id', vendorId);
+        if (error) throw error;
     }
 };

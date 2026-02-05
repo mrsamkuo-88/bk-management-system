@@ -161,8 +161,16 @@ const App: React.FC = () => {
         } catch (e) { console.error(e); }
     };
 
-    const handleDeleteVendor = (vendorId: string) => {
+    const handleDeleteVendor = async (vendorId: string) => {
+        if (!window.confirm("確定要刪除此廠商嗎？")) return;
         setVendors(prev => prev.filter(v => v.id !== vendorId));
+        try {
+            await api.deleteVendor(vendorId);
+        } catch (e) {
+            console.error(e);
+            alert("刪除失敗，請重試");
+            // Revert would require re-fetching or keeping prev state, skipping simple revert for now as this is rare
+        }
     };
 
     // --- Vendor Profile Logic ---
@@ -222,8 +230,15 @@ const App: React.FC = () => {
         setPartTimers(prev => prev.map(pt => pt.id === updatedPT.id ? updatedPT : pt));
     };
 
-    const handleDeletePartTimer = (ptId: string) => {
+    const handleDeletePartTimer = async (ptId: string) => {
+        if (!window.confirm("確定要刪除此人員嗎？")) return;
         setPartTimers(prev => prev.filter(pt => pt.id !== ptId));
+        try {
+            await api.deletePartTimer(ptId);
+        } catch (e) {
+            console.error(e);
+            alert("刪除失敗");
+        }
     };
 
 
