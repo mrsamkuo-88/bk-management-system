@@ -828,6 +828,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 onUpdateOrder={onUpdateOrder}
                                 onNavigateToVendor={onNavigateToVendor}
                                 onArchiveTask={onArchiveTask}
+                                onDeleteOrder={onDeleteOrder}
                                 setSelectedTaskId={setSelectedTaskId}
                                 onPublishTask={handlePublish}
                             />
@@ -1026,6 +1027,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                     {calendarCells.map((date, idx) => {
                                         if (!date) return <div key={idx}></div>;
                                         const dayOrders = orders.filter(o => {
+                                            if (o.status === 'COMPLETED' || o.status === 'ARCHIVED') return false; // Filter out archived
                                             const d = new Date(o.eventDate);
                                             return d.getDate() === date.getDate() && d.getMonth() === date.getMonth();
                                         });
@@ -1034,7 +1036,26 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                 <div className="text-sm font-bold text-slate-400 mb-2">{date.getDate()}</div>
                                                 <div className="space-y-1">
                                                     {dayOrders.map(o => (
-                                                        <div key={o.id} className="text-[10px] px-2 py-1 bg-indigo-50 text-indigo-700 rounded truncate cursor-pointer" onClick={() => { const task = tasks.find(t => t.orderId === o.id); if (task) setSelectedTaskId(task.id); }}>{o.eventName}</div>
+                                                        <div key={o.id}
+                                                            className="group flex items-center justify-between gap-1 text-[10px] px-2 py-1 bg-indigo-50 text-indigo-700 rounded cursor-pointer hover:bg-indigo-100 transition-colors"
+                                                            onClick={() => { const task = tasks.find(t => t.orderId === o.id); if (task) setSelectedTaskId(task.id); }}
+                                                        >
+                                                            <span className="truncate">{o.eventName}</span>
+                                                            {onDeleteOrder && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (window.confirm('警告：確定要刪除此活動 (Event) 嗎？\n此操作將一併刪除該活動的所有任務，且無法復原。')) {
+                                                                            onDeleteOrder(o.id);
+                                                                        }
+                                                                    }}
+                                                                    className="p-0.5 text-indigo-300 hover:text-red-500 hover:bg-white rounded-full transition-all"
+                                                                    title="刪除活動"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     ))}
                                                 </div>
                                             </div>

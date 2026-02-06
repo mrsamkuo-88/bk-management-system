@@ -16,7 +16,8 @@ import {
     Send,
     Edit2,
     Sparkles,
-    Filter
+    Filter,
+    Trash2
 } from 'lucide-react';
 import { VendorTask, Order, Vendor, TaskStatus, VendorRole, PartTimer, PartTimeRole } from '../types';
 
@@ -29,6 +30,7 @@ interface TaskAssignmentTableProps {
     onUpdateOrder: (order: Order) => void;
     onNavigateToVendor: (taskId: string) => void;
     onArchiveTask: (taskId: string, archive: boolean) => void;
+    onDeleteOrder?: (orderId: string) => void;
     setSelectedTaskId: (id: string | null) => void;
     onPublishTask: (taskId: string, e?: React.MouseEvent) => void;
 }
@@ -82,6 +84,7 @@ const TaskAssignmentTable: React.FC<TaskAssignmentTableProps> = ({
     onUpdateOrder,
     onNavigateToVendor,
     onArchiveTask,
+    onDeleteOrder,
     setSelectedTaskId,
     onPublishTask
 }) => {
@@ -304,6 +307,22 @@ const TaskAssignmentTable: React.FC<TaskAssignmentTableProps> = ({
                                                 <button onClick={(e) => { e.stopPropagation(); onNavigateToVendor(task.id); }} className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors" title="開啟連結"><ExternalLink size={16} /></button>
                                             )}
                                             <button onClick={(e) => { e.stopPropagation(); onArchiveTask(task.id, true); }} className="p-2 bg-slate-100 text-slate-400 rounded-lg hover:text-slate-600 transition-colors" title="封存"><Archive size={16} /></button>
+
+                                            {/* Delete Event Button */}
+                                            {onDeleteOrder && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (window.confirm('警告：確定要刪除整個活動 (Event) 嗎？\n此操作將一併刪除該活動的所有任務，且無法復原。')) {
+                                                            onDeleteOrder(order.id);
+                                                        }
+                                                    }}
+                                                    className="p-2 bg-red-50 text-red-300 rounded-lg hover:bg-red-100 hover:text-red-500 transition-colors"
+                                                    title="刪除整個活動"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
