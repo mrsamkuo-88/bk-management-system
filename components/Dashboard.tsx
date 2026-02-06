@@ -98,6 +98,7 @@ interface DashboardProps {
     onAddTask: (task: VendorTask) => void;
     onArchiveTask: (taskId: string, archive: boolean) => void;
     onDeleteTask: (taskId: string) => void;
+    onDeleteOrder: (orderId: string) => void; // New Prop
     onNavigateToVendor: (taskId: string) => void;
     // Vendor Management Props
     onAddVendor: (vendor: Vendor) => void;
@@ -158,6 +159,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     onAddTask,
     onArchiveTask,
     onDeleteTask,
+    onDeleteOrder, // New Prop
     onNavigateToVendor,
     onAddVendor,
     onUpdateVendor,
@@ -1503,7 +1505,22 @@ const Dashboard: React.FC<DashboardProps> = ({
 
                                     return (
                                         <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-5">
-                                            <h3 className="font-bold text-slate-800 flex items-center gap-2"><FileText size={18} className="text-slate-400" /> 訂單細節</h3>
+                                            <div className="flex justify-between items-center">
+                                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><FileText size={18} className="text-slate-400" /> 訂單細節</h3>
+                                                {isEditing && (
+                                                    <button
+                                                        onClick={() => {
+                                                            if (confirm('確定要刪除整個活動 (訂單) 嗎？\n這將一併刪除所有關聯的任務與資料，且無法復原。')) {
+                                                                onDeleteOrder(order.id);
+                                                                setSelectedTaskId(null);
+                                                            }
+                                                        }}
+                                                        className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded font-bold hover:bg-red-100 flex items-center gap-1 border border-red-200"
+                                                    >
+                                                        <Trash2 size={12} /> 刪除活動
+                                                    </button>
+                                                )}
+                                            </div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
                                                     <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">人數 Guests</label>

@@ -318,5 +318,20 @@ export const api = {
     deleteVendor: async (vendorId: string) => {
         const { error } = await supabase.from('vendors').delete().eq('id', vendorId);
         if (error) throw error;
+    },
+
+    deleteTask: async (taskId: string) => {
+        const { error } = await supabase.from('vendor_tasks').delete().eq('id', taskId);
+        if (error) throw error;
+    },
+
+    deleteOrder: async (orderId: string) => {
+        // Note: Assuming Supabase has Cascade Delete on tasks.order_id
+        // If not, we should delete tasks first. For safety, let's delete tasks first.
+        const { error: taskError } = await supabase.from('vendor_tasks').delete().eq('order_id', orderId);
+        if (taskError) throw taskError;
+
+        const { error } = await supabase.from('orders').delete().eq('id', orderId);
+        if (error) throw error;
     }
 };

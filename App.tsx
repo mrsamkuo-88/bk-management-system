@@ -34,7 +34,7 @@ const App: React.FC = () => {
     const [partTimers, setPartTimers] = useState<PartTimer[]>([]); // Initialize empty
     const [loading, setLoading] = useState(true);
 
-    // Load Initial Data
+    // Load Initial Data & Auto-Archive Legacy
     React.useEffect(() => {
         const loadData = async () => {
             try {
@@ -45,12 +45,59 @@ const App: React.FC = () => {
                     api.getVendors(),
                     api.getPartTimers()
                 ]);
-                setTasks(fetchedTasks);
-                setOrders(fetchedOrders);
+
+                // --- AUTO ARCHIVE LOGIC ---
+                const now = new Date();
+                now.setHours(0, 0, 0, 0); // Start of today
+
+                const pastOrders = fetchedOrders.filter(o => {
+                    const evtDate = new Date(o.eventDate);
+                    return evtDate < now && o.status === 'ACTIVE'; // Past Active Orders
+                });
+
+                let updatedTasks = [...fetchedTasks];
+                let updatedOrders = [...fetchedOrders];
+
+                if (pastOrders.length > 0) {
+                    console.log(`Auto-archiving ${pastOrders.length} past orders...`);
+
+                    // 1. Mark Orders as COMPLETED
+                    const pastOrderIds = pastOrders.map(o => o.id);
+                    updatedOrders = updatedOrders.map(o =>
+                        pastOrderIds.includes(o.id) ? { ...o, status: 'COMPLETED' } : o
+                    );
+
+                    // 2. Archive linked Tasks
+                    updatedTasks = updatedTasks.map(t =>
+                        pastOrderIds.includes(t.orderId) && !t.isArchived
+                            ? { ...t, isArchived: true }
+                            : t
+                    );
+
+                    // 3. Batch Update DB (Parallel)
+                    // Note: Ideally backend function, but frontend-driven here
+                    // We only update if changed.
+                    const updatePromises = [];
+
+                    // Update Orders
+                    pastOrders.forEach(o => {
+                        updatePromises.push(api.updateOrder({ ...o, status: 'COMPLETED' }));
+                    });
+
+                    // Update Tasks
+                    updatedTasks.filter(t => pastOrderIds.includes(t.orderId) && !fetchedTasks.find(ft => ft.id === t.id)?.isArchived).forEach(t => {
+                        updatePromises.push(api.updateTask(t));
+                    });
+
+                    await Promise.allSettled(updatePromises);
+                }
+
+                setTasks(updatedTasks);
+                setOrders(updatedOrders);
                 setVendors(fetchedVendors);
                 setPartTimers(fetchedPTs);
             } catch (error) {
-                console.error("Failed to load data", error);
+                console.error("Failed to load or archive data", error);
                 alert("無法連接資料庫，請檢查網路連線");
             } finally {
                 setLoading(false);
@@ -133,12 +180,25 @@ const App: React.FC = () => {
     // Handler to permanently delete a task
     const handleDeleteTask = async (taskId: string) => {
         if (window.confirm("確定要永久刪除此任務嗎？此操作無法復原。")) {
-            // Note: API remove not implemented yet in api.ts, assuming soft delete or purely UI for now? 
-            // Implementation plan didn't specify delete.
-            // Let's implement soft delete via archive or just remove from UI for now.
-            // Actually, let's skip API call if not ready, or add delete to API.
-            // For now, removing from UI.
             setTasks(prev => prev.filter(t => t.id !== taskId));
+            try {
+                await api.deleteTask(taskId);
+            } catch (e) {
+                console.error(e);
+                alert("刪除失敗，請重試");
+            }
+        }
+    };
+
+    // Handler to permanently delete an order (and linked tasks)
+    const handleDeleteOrder = async (orderId: string) => {
+        setOrders(prev => prev.filter(o => o.id !== orderId));
+        setTasks(prev => prev.filter(t => t.orderId !== orderId)); // Cascade delete local tasks
+        try {
+            await api.deleteOrder(orderId);
+        } catch (e) {
+            console.error(e);
+            alert("刪除失敗，請重試");
         }
     };
 
@@ -319,6 +379,7 @@ const App: React.FC = () => {
                     onAddTask={handleAddTask}
                     onArchiveTask={handleArchiveTask}
                     onDeleteTask={handleDeleteTask}
+                    onDeleteOrder={handleDeleteOrder}
                     onNavigateToVendor={handleNavigateToVendor}
                     onAddVendor={handleAddVendor}
                     onUpdateVendor={handleUpdateVendor}

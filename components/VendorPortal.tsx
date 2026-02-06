@@ -20,7 +20,7 @@ const VendorPortal: React.FC<VendorPortalProps> = ({ currentUser, userType, onLo
             try {
                 // 1. Get My Tasks using the filtered API
                 const tasks = await api.getTasks({ vendorId: currentUser.id });
-                setMyTasks(tasks);
+                setMyTasks(tasks.filter(t => !t.isArchived));
 
                 // 2. Get Related Orders (We need order details like Event Name/Date)
                 // In a real optimized API, we might include order data in the task query (join), 
