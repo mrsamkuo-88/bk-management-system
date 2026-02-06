@@ -1064,6 +1064,65 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 </div>
                             </div>
                         )}
+
+                        {activeView === 'HISTORY' && (
+                            <div className="flex-1 overflow-x-auto p-4">
+                                <div className="space-y-4 max-w-4xl mx-auto">
+                                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
+                                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <Archive size={32} className="text-slate-400" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-slate-800 mb-2">歷史封存庫 (Archive)</h3>
+                                        <p className="text-slate-500 text-sm max-w-md mx-auto">
+                                            此處顯示所有已完成或被手動封存的任務與活動。
+                                            <br />您可以隨時將其還原至監控中心。
+                                        </p>
+                                    </div>
+
+                                    {tasks.filter(t => t.isArchived).length === 0 ? (
+                                        <div className="text-center py-12 text-slate-400">
+                                            目前沒有封存的項目
+                                        </div>
+                                    ) : (
+                                        tasks.filter(t => t.isArchived).map(task => {
+                                            const order = orders.find(o => o.id === task.orderId);
+                                            const vendor = vendors.find(v => v.id === task.vendorId);
+                                            return (
+                                                <div key={task.id} className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between hover:shadow-md transition-shadow group">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`p-3 rounded-xl ${task.status === TaskStatus.CONFIRMED ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-400'}`}>
+                                                            <CheckCircle size={24} />
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-500">
+                                                                    {vendor ? getRoleName(vendor.role) : '未知廠商'}
+                                                                </span>
+                                                                <h4 className="font-bold text-slate-800">{order?.eventName || '未知活動'}</h4>
+                                                            </div>
+                                                            <div className="text-sm text-slate-500 flex items-center gap-4">
+                                                                <span className="flex items-center gap-1"><UserIcon size={14} /> {vendor?.name}</span>
+                                                                <span className="flex items-center gap-1"><CalendarIcon size={14} /> {order?.eventDate}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (window.confirm(`確定要還原「${order?.eventName}」的任務嗎？\n它將重新出現在任務監控中心。`)) {
+                                                                onArchiveTask(task.id, false);
+                                                            }
+                                                        }}
+                                                        className="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-50 hover:text-indigo-600 transition-colors flex items-center gap-2 shadow-sm"
+                                                    >
+                                                        <RotateCcw size={16} /> 還原任務
+                                                    </button>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </main>
             </div>

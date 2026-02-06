@@ -38,7 +38,7 @@ interface TaskAssignmentTableProps {
 // --- CONSTANTS ---
 const PAYMENT_OPTIONS = ['未付訂', '已付訂', '已付清', '其他'];
 const CATEGORY_OPTIONS = ['西式餐盒', 'Buffet內用', 'Buffet外燴', '點心內用', '點心外燴', '私廚', '客製化餐飲', '無餐飲'];
-const SPACE_OPTIONS = ['共享大廳', 'VIP包廂', '派對窩', '街吧', '玻璃屋', '共享廚房'];
+const SPACE_OPTIONS = ['共享大廳', 'VIP包廂', '派對窩', '街吧', '玻璃屋', '共享廚房', '客戶場地'];
 
 const STATUS_OPTIONS: { value: TaskStatus, label: string }[] = [
     { value: TaskStatus.PENDING, label: '草稿 (Pending)' },
