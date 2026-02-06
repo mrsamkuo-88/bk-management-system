@@ -15,17 +15,16 @@ const VendorPortal: React.FC<VendorPortalProps> = ({ currentUser, userType, onLo
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const [showArchived, setShowArchived] = useState(false);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Get My Tasks using the filtered API
+                // 1. Get My Tasks
                 const tasks = await api.getTasks({ vendorId: currentUser.id });
-                setMyTasks(tasks.filter(t => !t.isArchived));
+                setMyTasks(tasks); // Store ALL tasks
 
-                // 2. Get Related Orders (We need order details like Event Name/Date)
-                // In a real optimized API, we might include order data in the task query (join), 
-                // but for now we fetch all orders and filter locally or fetch specific. 
-                // Let's fetch all for simplicity as per current architecture.
+                // 2. Get Related Orders
                 const allOrders = await api.getOrders();
                 setOrders(allOrders);
 
@@ -57,9 +56,11 @@ const VendorPortal: React.FC<VendorPortalProps> = ({ currentUser, userType, onLo
         }
     };
 
-    if (loading) {
-        return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader className="animate-spin text-indigo-600" /></div>;
-    }
+    // ... helper ...
+
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader className="animate-spin text-indigo-600" /></div>;
+
+    const displayedTasks = myTasks.filter(t => showArchived ? t.isArchived : !t.isArchived);
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
@@ -85,22 +86,39 @@ const VendorPortal: React.FC<VendorPortalProps> = ({ currentUser, userType, onLo
 
             {/* Content */}
             <main className="max-w-3xl mx-auto px-4 py-6">
-                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <Calendar className="text-indigo-600" size={24} />
-                    我的任務 ({myTasks.length})
-                </h2>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                        <Calendar className="text-indigo-600" size={24} />
+                        我的任務 ({myTasks.filter(t => !t.isArchived).length})
+                    </h2>
+
+                    <div className="flex bg-slate-100 p-1 rounded-lg">
+                        <button
+                            onClick={() => setShowArchived(false)}
+                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${!showArchived ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            進行中
+                        </button>
+                        <button
+                            onClick={() => setShowArchived(true)}
+                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${showArchived ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            已封存 ({myTasks.filter(t => t.isArchived).length})
+                        </button>
+                    </div>
+                </div>
 
                 <div className="space-y-4">
-                    {myTasks.length === 0 ? (
+                    {displayedTasks.length === 0 ? (
                         <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300">
                             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Clock className="text-slate-400" size={32} />
                             </div>
-                            <h3 className="text-slate-600 font-bold mb-1">目前沒有任務</h3>
-                            <p className="text-slate-400 text-sm">當有新任務指派給您時，會顯示在這裡。</p>
+                            <h3 className="text-slate-600 font-bold mb-1">{showArchived ? '沒有已封存的任務' : '目前沒有任務'}</h3>
+                            <p className="text-slate-400 text-sm">{showArchived ? '封存的活動會顯示在這裡' : '當有新任務指派給您時，會顯示在這裡。'}</p>
                         </div>
                     ) : (
-                        myTasks.map(task => {
+                        displayedTasks.map(task => {
                             const order = getOrder(task.orderId);
                             if (!order) return null; // Should not happen
 
