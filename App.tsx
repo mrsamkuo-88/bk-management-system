@@ -377,6 +377,19 @@ const App: React.FC = () => {
                     );
                 }
 
+                // Navigation Logic
+                const handleBack = () => {
+                    if (currentUser) {
+                        if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.OPERATOR) {
+                            setView({ type: 'DASHBOARD' });
+                        } else {
+                            setView({ type: 'VENDOR_PORTAL' });
+                        }
+                    } else {
+                        setView({ type: 'LANDING' });
+                    }
+                };
+
                 return (
                     <VendorConfirmation
                         taskData={task}
@@ -385,7 +398,7 @@ const App: React.FC = () => {
                         allTasks={tasks.length > 0 ? tasks : MOCK_TASKS}
                         vendors={vendors.length > 0 ? vendors : MOCK_VENDORS}
                         partTimers={partTimers.length > 0 ? partTimers : MOCK_PART_TIMERS}
-                        onBack={() => setView({ type: 'LANDING' })}
+                        onBack={handleBack}
                         onSwitchTask={(tid) => setView({ type: 'VENDOR_LINK', taskId: tid })}
                         onUpdateOrder={handleUpdateOrder}
                         onUpdateProfile={handleVendorProfileSubmit}
