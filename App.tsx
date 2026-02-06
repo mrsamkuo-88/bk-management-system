@@ -227,9 +227,10 @@ const App: React.FC = () => {
 
     // Handler to update an order
     const handleUpdateOrder = async (updatedOrder: Order) => {
-        setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+        const orderWithTimestamp = { ...updatedOrder, updatedAt: new Date().toISOString() };
+        setOrders(prev => prev.map(o => o.id === updatedOrder.id ? orderWithTimestamp : o));
         try {
-            await api.updateOrder(updatedOrder);
+            await api.updateOrder(orderWithTimestamp);
         } catch (e) {
             console.error("Update Order Failed:", e);
             alert(`訂單更新失敗: ${e instanceof Error ? e.message : 'Unknown Error'}`);

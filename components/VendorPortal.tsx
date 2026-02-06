@@ -121,8 +121,8 @@ const VendorPortal: React.FC<VendorPortalProps> = ({ currentUser, userType, onLo
                                         {getStatusBadge(task.status)}
                                     </div>
 
-                                    <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
-                                        {order.eventName}
+                                    <h3 className={`text-lg font-bold mb-2 transition-colors ${order.status === 'CANCELLED' ? 'text-slate-400 line-through' : 'text-slate-800 group-hover:text-indigo-600'}`}>
+                                        {order.eventName} {order.status === 'CANCELLED' && <span className="text-red-500 text-sm no-underline ml-2">(已取消)</span>}
                                     </h3>
 
                                     <div className="flex items-center gap-4 text-sm text-slate-600 mb-4">

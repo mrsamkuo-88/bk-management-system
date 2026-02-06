@@ -22,7 +22,8 @@ import {
     Truck,
     Box,
     Utensils,
-    X
+    X,
+    Bell
 } from 'lucide-react';
 import { VendorTask, Order, Vendor, TaskStatus, EventFlowItem, PartTimer, VendorProfileUpdate, LogisticsTime } from '../types';
 
@@ -84,7 +85,21 @@ const VendorConfirmation: React.FC<VendorConfirmationProps> = ({ taskData, order
             setTask(taskData);
             setLocalOrder(orderData);
 
+            // Update lastViewedAt silently
+            if (onUpdateTask) {
+                // We only update if it's not already recent to avoid loops, but since we receive props, 
+                // we should just call it once on mount if we want to clear the 'unread' status.
+                // Ideally, the parent should verify this, but we can do a check.
+                // A simpler way: We assume entering this screen counts as viewing.
+                const now = new Date().toISOString();
+                if (!taskData.lastViewedAt || (orderData.updatedAt && orderData.updatedAt > taskData.lastViewedAt)) {
+                    // If never viewed OR updated since last view, update lastViewedAt
+                    onUpdateTask({ ...taskData, lastViewedAt: now });
+                }
+            }
+
             const isDone = !!(taskData.ackAt || taskData.status === TaskStatus.ISSUE_REPORTED);
+            // ... existing logic ...
             setIsSubmitted(isDone);
             setCheckedUnderstanding(isDone);
             setCheckedCapability(isDone);
@@ -111,7 +126,8 @@ const VendorConfirmation: React.FC<VendorConfirmationProps> = ({ taskData, order
             }
             setLoading(false);
         }
-    }, [taskData, orderData, assignee]);
+    }, [taskData, orderData, assignee]); // Attention: onUpdateTask dependency removed to avoid loops if reference unstable, or keep and be careful. 
+    // Ideally onUpdateTask should be stable. Keeping it safe.
 
     const showNotification = (message: string, type: 'success' | 'error') => {
         setToast({ show: true, message, type });
@@ -265,6 +281,23 @@ const VendorConfirmation: React.FC<VendorConfirmationProps> = ({ taskData, order
 
             {/* CONTENT AREA */}
             <div className="flex-1 overflow-y-auto pb-36 px-5 py-6">
+
+                {/* UPDATE NOTIFICATION BANNER */}
+                {localOrder.updatedAt && task.ackAt && localOrder.updatedAt > task.ackAt && (
+                    <div className="mb-6 bg-rose-50 border border-rose-100 rounded-xl p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                        <div className="bg-rose-100 p-2 rounded-full text-rose-600 shrink-0">
+                            <Bell size={20} />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-rose-800">活動資訊已更新</h3>
+                            <p className="text-sm text-rose-600 mt-1">
+                                管理員已更新了此活動的詳細資訊。請重新檢視內容（特別是時間、地點或流程），確認無誤後請再次保持聯繫。
+                                <br />
+                                <span className="text-xs opacity-75">更新時間: {new Date(localOrder.updatedAt).toLocaleString('zh-TW')}</span>
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* INFO TAB */}
                 {activeTab === 'INFO' && (
