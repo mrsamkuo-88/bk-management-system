@@ -39,6 +39,29 @@ const App: React.FC = () => {
         const loadData = async () => {
             try {
                 setLoading(true);
+
+                // 1. Restore Session
+                const { data: { session } } = await api.supabase.auth.getSession();
+                if (session?.user) {
+                    console.log("Restoring session for:", session.user.email);
+                    // Fetch Profile
+                    const { type, data } = await api.getUserByEmail(session.user.email!);
+
+                    if (type === 'ADMIN') {
+                        setCurrentUser({ id: session.user.id, name: session.user.email!, role: UserRole.ADMIN, title: '系統管理員', avatar: 'AD' });
+                        setView({ type: 'DASHBOARD' });
+                    } else if (data) {
+                        setCurrentUser({
+                            id: data.id,
+                            name: data.name,
+                            role: type === 'VENDOR' ? UserRole.VENDOR : UserRole.PART_TIMER,
+                            title: data.role || (type === 'VENDOR' ? '合作廠商' : '兼職人員'),
+                            avatar: data.name.substring(0, 2).toUpperCase()
+                        });
+                        setView({ type: 'VENDOR_PORTAL' });
+                    }
+                }
+
                 const [fetchedTasks, fetchedOrders, fetchedVendors, fetchedPTs] = await Promise.all([
                     api.getTasks(),
                     api.getOrders(),

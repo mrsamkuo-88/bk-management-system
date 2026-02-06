@@ -7,6 +7,8 @@ const mapOrder = (row: any): Order => ({
     clientName: row.client_name,
     eventName: row.event_name,
     eventDate: row.event_date,
+    eventStartTime: row.event_start_time,
+    eventEndTime: row.event_end_time,
     guestCount: row.guest_count,
     location: row.location,
     locationLink: row.location_link,
@@ -74,6 +76,7 @@ const mapTask = (row: any): VendorTask => ({
 });
 
 export const api = {
+    supabase, // Expose for direct usage if needed
     // --- Auth & Profile ---
     signIn: async (email: string, password: string) => {
         const { data, error } = await supabase.auth.signInWithPassword({
