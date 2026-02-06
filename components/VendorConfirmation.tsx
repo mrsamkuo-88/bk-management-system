@@ -144,6 +144,19 @@ const VendorConfirmation: React.FC<VendorConfirmationProps> = ({ taskData, order
         }));
     };
 
+    // Fix for timezone issue: Convert stored UTC ISO string to Local datetime-local format
+    const toLocalISOString = (dateStr: string) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        // Get local components
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
     const handleConfirm = () => {
         if (!task) return;
         const updatedTask = { ...task, status: TaskStatus.CONFIRMED, ackAt: new Date().toISOString(), ackIp: '192.168.1.10', vendorNote: vendorNote };
@@ -291,9 +304,10 @@ const VendorConfirmation: React.FC<VendorConfirmationProps> = ({ taskData, order
                                         <input
                                             type="datetime-local"
                                             className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                            value={localOrder.eventDate.slice(0, 16)}
+                                            value={toLocalISOString(localOrder.eventDate)}
                                             onChange={e => handleOrderFieldChange('eventDate', new Date(e.target.value).toISOString())}
                                             onBlur={commitOrderChanges}
+                                            step="900"
                                         />
                                     ) : new Date(localOrder.eventDate).toLocaleString('zh-TW', { dateStyle: 'full', timeStyle: 'short' })}
                                 />
