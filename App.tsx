@@ -231,8 +231,8 @@ const App: React.FC = () => {
         try {
             await api.updateOrder(updatedOrder);
         } catch (e) {
-            console.error(e);
-            alert("訂單更新失敗");
+            console.error("Update Order Failed:", e);
+            alert(`訂單更新失敗: ${e instanceof Error ? e.message : 'Unknown Error'}`);
         }
     };
 

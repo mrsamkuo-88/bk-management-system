@@ -234,8 +234,15 @@ export const api = {
             logistics: order.logistics,
             execution_team: order.executionTeam
         };
-        const { error } = await supabase.from('orders').update(dbOrder).eq('id', order.id);
+        const { error, count } = await supabase
+            .from('orders')
+            .update(dbOrder)
+            .eq('id', order.id)
+            .eq('id', order.id)
+            .select('*', { count: 'exact' }); // Select all to return data and count
+
         if (error) throw error;
+        if (count === 0) throw new Error(`Order with ID ${order.id} not found or not updated.`);
     },
 
     // --- Vendors ---
