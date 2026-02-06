@@ -227,7 +227,31 @@ const App: React.FC = () => {
 
     // Handler to update an order
     const handleUpdateOrder = async (updatedOrder: Order) => {
-        const orderWithTimestamp = { ...updatedOrder, updatedAt: new Date().toISOString() };
+        // Find original order to compare
+        const originalOrder = orders.find(o => o.id === updatedOrder.id);
+        let changeSummary = "";
+
+        if (originalOrder) {
+            const changes: string[] = [];
+            // Simple field comparisons
+            if (originalOrder.eventDate !== updatedOrder.eventDate) changes.push("日期");
+            if (originalOrder.location !== updatedOrder.location) changes.push("地點");
+            if (originalOrder.eventStartTime !== updatedOrder.eventStartTime || originalOrder.eventEndTime !== updatedOrder.eventEndTime) changes.push("活動時間");
+            // Check deep arrays simply by length or JSON string (optimization: strict compare might be too heavy, simplified approach)
+            if (JSON.stringify(originalOrder.eventFlow) !== JSON.stringify(updatedOrder.eventFlow)) changes.push("活動流程");
+            if (originalOrder.menuItems !== updatedOrder.menuItems) changes.push("菜單內容");
+
+            if (changes.length > 0) {
+                changeSummary = changes.join('、');
+            }
+        }
+
+        const orderWithTimestamp = {
+            ...updatedOrder,
+            updatedAt: new Date().toISOString(),
+            latestChangeSummary: changeSummary || undefined
+        };
+
         setOrders(prev => prev.map(o => o.id === updatedOrder.id ? orderWithTimestamp : o));
         try {
             await api.updateOrder(orderWithTimestamp);

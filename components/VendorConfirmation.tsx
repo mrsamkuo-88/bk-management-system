@@ -291,7 +291,8 @@ const VendorConfirmation: React.FC<VendorConfirmationProps> = ({ taskData, order
                         <div>
                             <h3 className="font-bold text-rose-800">活動資訊已更新</h3>
                             <p className="text-sm text-rose-600 mt-1">
-                                管理員已更新了此活動的詳細資訊。請重新檢視內容（特別是時間、地點或流程），確認無誤後請再次保持聯繫。
+                                管理員已更新了以下內容：<span className="font-bold underline">{localOrder.latestChangeSummary || "詳細資訊"}</span>。
+                                <br />請重新檢視確認。
                                 <br />
                                 <span className="text-xs opacity-75">更新時間: {new Date(localOrder.updatedAt).toLocaleString('zh-TW')}</span>
                             </p>
@@ -545,6 +546,31 @@ const VendorConfirmation: React.FC<VendorConfirmationProps> = ({ taskData, order
                                     <div className="text-center text-xs text-slate-400 py-4 border border-dashed border-slate-200 rounded-xl">
                                         {isEditable ? "尚未指派執行團隊，請點擊新增" : "尚未公開執行團隊名單"}
                                     </div>
+                                )}
+                            </div>
+
+                            {/* Execution Note Section */}
+                            <div className="mt-4 pt-4 border-t border-slate-100">
+                                <label className="block text-xs font-bold text-slate-400 mb-2 flex items-center gap-1">
+                                    <ClipboardList size={12} /> 備註事項 (Notes)
+                                </label>
+                                {isEditable ? (
+                                    <textarea
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-700"
+                                        value={localOrder.executionNote || ''}
+                                        onChange={(e) => handleOrderFieldChange('executionNote', e.target.value)}
+                                        onBlur={commitOrderChanges}
+                                        placeholder="在此輸入給執行團隊的備註事項..."
+                                        rows={3}
+                                    />
+                                ) : (
+                                    localOrder.executionNote ? (
+                                        <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 text-sm text-slate-700 whitespace-pre-wrap">
+                                            {localOrder.executionNote}
+                                        </div>
+                                    ) : (
+                                        <span className="text-xs text-slate-300 italic">無備註事項</span>
+                                    )
                                 )}
                             </div>
                         </div>

@@ -158,6 +158,9 @@ export interface Order {
   menuItems?: string; // Text block for menu
   logistics: LogisticsTime[]; // Changed to array for dynamic addition
   executionTeam: ExecutionStaff[]; // New: The team list
+  updatedAt?: string; // New: Track last update time
+  latestChangeSummary?: string; // New: Text summary of changes
+  executionNote?: string; // New: Notes for execution team
 }
 
 export interface OpsLogEntry {
