@@ -136,7 +136,9 @@ export interface Order {
   id: string;
   clientName: string;
   eventName: string;
-  eventDate: string; // ISO Date string
+  eventDate: string; // ISO Date string (Date part)
+  eventStartTime?: string; // e.g. "18:00"
+  eventEndTime?: string;   // e.g. "21:30"
   guestCount: number;
   location: string;
   locationLink?: string; // Google Maps Link

@@ -128,7 +128,16 @@ const VendorPortal: React.FC<VendorPortalProps> = ({ currentUser, userType, onLo
                                     <div className="flex items-center gap-4 text-sm text-slate-600 mb-4">
                                         <div className="flex items-center gap-1">
                                             <Clock size={14} className="text-slate-400" />
-                                            {new Date(order.eventDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {order.eventStartTime && order.eventEndTime ? (
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs text-slate-500">活動時間</span>
+                                                    <span className="font-bold text-slate-700 font-mono">
+                                                        {order.eventStartTime} ~ {order.eventEndTime}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                new Date(order.eventDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <MapPin size={14} className="text-slate-400" />

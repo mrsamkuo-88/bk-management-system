@@ -103,6 +103,8 @@ export const MOCK_ORDERS: Order[] = [
     clientName: '科技股份有限公司',
     eventName: '年度慶祝晚宴',
     eventDate: new Date(Date.now() + 86400000 * 2).toISOString(), // T+2
+    eventStartTime: '18:00',
+    eventEndTime: '21:30',
     guestCount: 20, // Adjusted to match prompt example roughly
     location: '君悅酒店 3F 凱悅廳',
     locationLink: 'https://maps.google.com/?q=Grand+Hyatt+Taipei',
@@ -148,6 +150,8 @@ export const MOCK_ORDERS: Order[] = [
     clientName: '莎拉與約翰婚禮',
     eventName: '花園婚禮',
     eventDate: new Date(Date.now() + 86400000 * 0.8).toISOString(), // T+0.8 (Tomorrow, urgent)
+    eventStartTime: '16:00',
+    eventEndTime: '20:00',
     guestCount: 150,
     location: '台北花園別墅 戶外草地區',
     locationLink: 'https://maps.google.com/?q=Taipei+Garden+Villa',
