@@ -114,17 +114,24 @@ export type CateringCategory = '西式餐盒' | 'Buffet內用' | 'Buffet外燴' 
 export type Space = '共享大廳' | 'VIP包廂' | '派對窩' | '街吧' | '玻璃屋' | '共享廚房';
 
 // New Financial Interface
+// New Financial Interface
 export interface OrderFinancials {
   budgetPerHead: number; // 餐標
   shippingFee: number;   // 運費
-  serviceFee: number;    // 精緻型服務費 (可手動或10%)
-  adjustments: number;   // 廠商加值/其他調整
+  serviceFee: number;    // 服務費 (10% 計算結果) - THIS IS THE CALCULATED VALUE
+  adjustments: number;   // 其他調整 (Manual +/-)
   deposit: number;       // 訂金
   depositDate?: string;  // 訂金支付日
   finalPayment?: number; // 尾款 (通常自動計算)
   taxRate: number;       // e.g., 0.05
-  isInvoiceRequired: boolean; // 是否需要發票
-  hasServiceCharge: boolean;  // 是否收 10% 服務費
+  isInvoiceRequired: boolean; // 是否需要發票 (Legacy, keep for now)
+
+  // NEW FIELDS
+  isTaxIncluded: boolean;   // 是否含稅 (5%) - Toggle
+  hasServiceFee: boolean;   // 是否收 10% 服務費 - Toggle
+  vendorValueAdded: number; // 廠商加值 (Separate from Service Fee)
+  discountType: 'NONE' | 'PERCENTAGE' | 'FIXED'; // 優惠類型
+  discountValue: number;    // 優惠數值 (e.g. 10 for 10% off, or 1000 for $1000 off)
 }
 
 export interface LogisticsTime {

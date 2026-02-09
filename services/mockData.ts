@@ -123,17 +123,7 @@ export const MOCK_ORDERS: Order[] = [
     cateringCategory: 'Buffet外燴',
     space: 'VIP包廂',
     taxId: '88123456',
-    financials: {
-      budgetPerHead: 800,
-      shippingFee: 1200,
-      serviceFee: 2000,
-      adjustments: 0,
-      deposit: 3840,
-      depositDate: '2023-10-15',
-      taxRate: 0.05,
-      isInvoiceRequired: true,
-      hasServiceCharge: false // Manually set to 2000
-    },
+    financials: { budgetPerHead: 1500, shippingFee: 500, serviceFee: 3100, adjustments: 0, deposit: 30000, depositDate: new Date(Date.now() + 86400000 * 1).toISOString(), finalPayment: 31000, taxRate: 0.05, isInvoiceRequired: true, hasServiceFee: true, isTaxIncluded: true, vendorValueAdded: 1000, discountType: 'NONE', discountValue: 0 },
     menuItems: `胡麻野菜沙拉\n日式卷壽司拼盤\n凱撒雞肉沙拉\n泰式涼拌海鮮\n甘蔗雞肉玉子燒\n爐烤自製豬五花\n爐烤舒肥牛排\n義式番茄海鮮湯\n松露蘆筍海鮮燉飯`,
     logistics: [
       { time: '17:00', action: '擺盤完成' },
@@ -175,7 +165,11 @@ export const MOCK_ORDERS: Order[] = [
       depositDate: '2023-11-01',
       taxRate: 0.05,
       isInvoiceRequired: true,
-      hasServiceCharge: true
+      hasServiceFee: true,
+      isTaxIncluded: false,
+      vendorValueAdded: 0,
+      discountType: 'NONE',
+      discountValue: 0
     },
     menuItems: '婚禮特製蛋糕\n粉紅香檳塔\n法式小點心\n現切火腿區',
     logistics: [
@@ -214,7 +208,11 @@ export const MOCK_ORDERS: Order[] = [
       deposit: 0,
       taxRate: 0.05,
       isInvoiceRequired: true,
-      hasServiceCharge: true
+      hasServiceFee: true,
+      isTaxIncluded: false,
+      vendorValueAdded: 0,
+      discountType: 'NONE',
+      discountValue: 0
     },
     logistics: [
       { time: '12:30', action: '擺盤完成' },

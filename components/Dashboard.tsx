@@ -516,7 +516,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                 deposit: 0,
                 taxRate: 0.05,
                 isInvoiceRequired: true,
-                hasServiceCharge: false
+                hasServiceFee: false,
+                isTaxIncluded: false,
+                vendorValueAdded: 0,
+                discountType: 'NONE',
+                discountValue: 0
             },
             logistics: [],
             executionTeam: []
@@ -1574,19 +1578,40 @@ const Dashboard: React.FC<DashboardProps> = ({
 
                                     // Calculate Financials on the fly
                                     const mealCost = order.guestCount * order.financials.budgetPerHead;
-                                    const serviceFee = order.financials.hasServiceCharge
-                                        ? Math.round(mealCost * 0.1)
-                                        : order.financials.serviceFee;
+                                    const vendorValueAdded = order.financials.vendorValueAdded || 0;
 
-                                    const subtotal = mealCost + order.financials.shippingFee + serviceFee + (order.financials.adjustments || 0);
-                                    const taxAmount = Math.round(subtotal * 0.05); // 5% VAT fixed for Taiwan usually
-                                    const totalAmount = subtotal + taxAmount;
+                                    // Service Fee Base: Typically just Meal Cost + Vendor Value Added
+                                    const serviceFeeBase = mealCost + vendorValueAdded;
+                                    const serviceFee = order.financials.hasServiceFee
+                                        ? Math.round(serviceFeeBase * 0.1)
+                                        : 0;
+
+                                    const shippingFee = order.financials.shippingFee;
+                                    const adjustments = order.financials.adjustments || 0;
+
+                                    // Discount Calculation
+                                    let discountAmount = 0;
+                                    if (order.financials.discountType === 'PERCENTAGE') {
+                                        const preDiscountTotal = mealCost + vendorValueAdded + serviceFee + shippingFee + adjustments;
+                                        discountAmount = Math.round(preDiscountTotal * (order.financials.discountValue / 100));
+                                    } else if (order.financials.discountType === 'FIXED') {
+                                        discountAmount = order.financials.discountValue || 0;
+                                    }
+
+                                    const preTaxTotal = (mealCost + vendorValueAdded + serviceFee + shippingFee + adjustments) - discountAmount;
+
+                                    // Tax Calculation
+                                    const taxAmount = order.financials.isTaxIncluded
+                                        ? Math.round(preTaxTotal * 0.05)
+                                        : 0;
+
+                                    const totalAmount = preTaxTotal + taxAmount;
                                     const balance = totalAmount - order.financials.deposit;
 
                                     return (
                                         <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-5">
                                             <div className="flex justify-between items-center">
-                                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><FileText size={18} className="text-slate-400" /> 訂單細節</h3>
+                                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><FileText size={18} className="text-slate-400" /> 訂單細節 & 財務</h3>
                                                 {isEditing && (
                                                     <button
                                                         onClick={() => {
@@ -1616,11 +1641,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                 {isEditing ? <textarea className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-sm" rows={2} value={order.specialRequests} onChange={e => setEditOrderForm(prev => prev ? { ...prev, specialRequests: e.target.value } : null)} /> : <div className="text-sm text-slate-700 bg-white p-3 rounded border border-slate-200">{order.specialRequests}</div>}
                                             </div>
 
-                                            {/* --- NEW: EXECUTION TEAM SECTION --- */}
+                                            {/* Execution Team */}
                                             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm mt-4">
                                                 <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
                                                     <h4 className="font-bold text-slate-700 flex items-center gap-2">
-                                                        <Users size={16} className="text-indigo-500" /> 執行夥伴與團隊 (Execution Team)
+                                                        <Users size={16} className="text-indigo-500" /> 執行夥伴與團隊
                                                     </h4>
                                                     {isEditing && (
                                                         <button
@@ -1634,24 +1659,21 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                         </button>
                                                     )}
                                                 </div>
-
                                                 <div className="space-y-3">
                                                     {(order.executionTeam || []).map((staff, idx) => (
                                                         <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
                                                             {isEditing ? (
                                                                 <>
-                                                                    {/* Role */}
                                                                     <input
                                                                         className="w-full sm:w-24 text-xs font-bold bg-white border border-slate-200 rounded px-2 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500"
                                                                         value={staff.role}
-                                                                        placeholder="角色 (如: 外燴)"
+                                                                        placeholder="角色"
                                                                         onChange={(e) => {
                                                                             const newTeam = [...order.executionTeam];
                                                                             newTeam[idx] = { ...newTeam[idx], role: e.target.value };
                                                                             setEditOrderForm(prev => prev ? { ...prev, executionTeam: newTeam } : null);
                                                                         }}
                                                                     />
-                                                                    {/* Name / Select */}
                                                                     <div className="flex-1 relative">
                                                                         <select
                                                                             className="w-full text-xs bg-white border border-slate-200 rounded px-2 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500 appearance-none"
@@ -1670,14 +1692,13 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                                             }}
                                                                         >
                                                                             {availableStaffOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                                                                            {/* If simple name was typed previously without ID */}
-                                                                            {!staff.assigneeId && staff.name && <option value="" disabled>手動輸入: {staff.name}</option>}
+                                                                            {!staff.assigneeId && staff.name && <option value="" disabled>手動: {staff.name}</option>}
                                                                         </select>
                                                                         {staff.assigneeId === "" && (
                                                                             <input
                                                                                 className="absolute inset-0 w-full text-xs bg-white border border-slate-200 rounded px-2 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500"
                                                                                 value={staff.name}
-                                                                                placeholder="自訂姓名..."
+                                                                                placeholder="姓名"
                                                                                 onChange={(e) => {
                                                                                     const newTeam = [...order.executionTeam];
                                                                                     newTeam[idx] = { ...newTeam[idx], name: e.target.value };
@@ -1686,7 +1707,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                                             />
                                                                         )}
                                                                     </div>
-                                                                    {/* Phone */}
                                                                     <input
                                                                         className="w-full sm:w-28 text-xs font-mono bg-white border border-slate-200 rounded px-2 py-1.5 outline-none"
                                                                         value={staff.phone}
@@ -1697,22 +1717,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                                             setEditOrderForm(prev => prev ? { ...prev, executionTeam: newTeam } : null);
                                                                         }}
                                                                     />
-                                                                    {/* Notified Checkbox */}
-                                                                    <label className={`flex items-center gap-1 px-2 py-1 rounded cursor-pointer select-none border transition-colors ${staff.isNotified ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-slate-200 text-slate-400'}`}>
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            className="hidden"
-                                                                            checked={staff.isNotified}
-                                                                            onChange={(e) => {
-                                                                                const newTeam = [...order.executionTeam];
-                                                                                newTeam[idx] = { ...newTeam[idx], isNotified: e.target.checked };
-                                                                                setEditOrderForm(prev => prev ? { ...prev, executionTeam: newTeam } : null);
-                                                                            }}
-                                                                        />
-                                                                        <CheckSquare size={14} className={staff.isNotified ? 'opacity-100' : 'opacity-50'} />
-                                                                        <span className="text-[10px] font-bold">已通知</span>
-                                                                    </label>
-                                                                    {/* Delete */}
                                                                     <button
                                                                         onClick={() => {
                                                                             const newTeam = order.executionTeam.filter((_, i) => i !== idx);
@@ -1748,10 +1752,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                 </div>
                                             </div>
 
-                                            {/* --- NEW: FINANCIAL SECTION --- */}
+                                            {/* FINANCIAL SECTION */}
                                             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm mt-4">
                                                 <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
-                                                    <Receipt size={16} className="text-indigo-500" /> 財務與款項 (Financials)
+                                                    <Receipt size={16} className="text-indigo-500" /> 費用明細
                                                 </h4>
 
                                                 <div className="space-y-3 text-sm">
@@ -1761,6 +1765,16 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                         <span className="font-medium text-slate-800">${mealCost.toLocaleString()}</span>
                                                     </div>
 
+                                                    {/* Vendor Value Added */}
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-slate-500">廠商加值 (Vendor Value Added)</span>
+                                                        {isEditing ? (
+                                                            <input type="number" className="w-24 text-right bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm" value={order.financials.vendorValueAdded || 0} onChange={e => setEditOrderForm(prev => prev ? { ...prev, financials: { ...prev.financials, vendorValueAdded: parseInt(e.target.value) } } : null)} />
+                                                        ) : (
+                                                            <span className="font-medium text-slate-800">${(order.financials.vendorValueAdded || 0).toLocaleString()}</span>
+                                                        )}
+                                                    </div>
+
                                                     {/* Shipping */}
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-slate-500">運費</span>
@@ -1768,40 +1782,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                             <input type="number" className="w-24 text-right bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm" value={order.financials.shippingFee} onChange={e => setEditOrderForm(prev => prev ? { ...prev, financials: { ...prev.financials, shippingFee: parseInt(e.target.value) } } : null)} />
                                                         ) : (
                                                             <span className="font-medium text-slate-800">${order.financials.shippingFee.toLocaleString()}</span>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Service Fee */}
-                                                    <div className="flex justify-between items-center">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-slate-500">服務費 / 廠商加值</span>
-                                                            {isEditing && (
-                                                                <label className="flex items-center gap-1 text-[10px] text-indigo-600 cursor-pointer select-none bg-indigo-50 px-2 py-0.5 rounded">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={order.financials.hasServiceCharge}
-                                                                        onChange={(e) => {
-                                                                            const checked = e.target.checked;
-                                                                            setEditOrderForm(prev => {
-                                                                                if (!prev) return null;
-                                                                                const newServiceFee = checked ? Math.round(prev.guestCount * prev.financials.budgetPerHead * 0.1) : prev.financials.serviceFee;
-                                                                                return { ...prev, financials: { ...prev.financials, hasServiceCharge: checked, serviceFee: newServiceFee } };
-                                                                            });
-                                                                        }}
-                                                                    /> 10%
-                                                                </label>
-                                                            )}
-                                                        </div>
-                                                        {isEditing ? (
-                                                            <input
-                                                                type="number"
-                                                                className={`w-24 text-right border border-slate-200 rounded px-2 py-1 text-sm ${order.financials.hasServiceCharge ? 'bg-slate-100 text-slate-400' : 'bg-slate-50 text-slate-900'}`}
-                                                                value={serviceFee}
-                                                                disabled={order.financials.hasServiceCharge}
-                                                                onChange={e => setEditOrderForm(prev => prev ? { ...prev, financials: { ...prev.financials, serviceFee: parseInt(e.target.value) } } : null)}
-                                                            />
-                                                        ) : (
-                                                            <span className="font-medium text-slate-800">${serviceFee.toLocaleString()} {order.financials.hasServiceCharge && <span className="text-[10px] text-slate-400">(10%)</span>}</span>
                                                         )}
                                                     </div>
 
@@ -1815,24 +1795,80 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                         )}
                                                     </div>
 
-                                                    <div className="border-t border-slate-100 my-2"></div>
-
-                                                    {/* Subtotal */}
-                                                    <div className="flex justify-between items-center text-slate-600">
-                                                        <span>銷售額 (未稅)</span>
-                                                        <span className="font-bold">${subtotal.toLocaleString()}</span>
+                                                    {/* Service Fee */}
+                                                    <div className="flex justify-between items-center bg-indigo-50/50 p-2 rounded">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-slate-600 font-bold">服務費 (10%)</span>
+                                                            {isEditing && (
+                                                                <label className="flex items-center gap-1 text-[10px] text-indigo-600 cursor-pointer select-none bg-indigo-100 px-2 py-0.5 rounded">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={order.financials.hasServiceFee}
+                                                                        onChange={(e) => {
+                                                                            setEditOrderForm(prev => prev ? { ...prev, financials: { ...prev.financials, hasServiceFee: e.target.checked } } : null);
+                                                                        }}
+                                                                    /> 啟用
+                                                                </label>
+                                                            )}
+                                                        </div>
+                                                        <span className="font-bold text-indigo-700">${serviceFee.toLocaleString()}</span>
                                                     </div>
 
+                                                    {/* Discount */}
+                                                    <div className="flex justify-between items-start bg-red-50/50 p-2 rounded">
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-slate-600 font-bold flex items-center gap-2">優惠折抵 (Discount)</span>
+                                                            {isEditing && (
+                                                                <div className="flex gap-2">
+                                                                    <select
+                                                                        className="text-xs bg-white border border-slate-200 rounded px-1 py-0.5 outline-none"
+                                                                        value={order.financials.discountType || 'NONE'}
+                                                                        onChange={(e) => setEditOrderForm(prev => prev ? { ...prev, financials: { ...prev.financials, discountType: e.target.value as any } } : null)}
+                                                                    >
+                                                                        <option value="NONE">無優惠</option>
+                                                                        <option value="PERCENTAGE">百分比 (%)</option>
+                                                                        <option value="FIXED">固定金額 ($)</option>
+                                                                    </select>
+                                                                    {order.financials.discountType !== 'NONE' && (
+                                                                        <input
+                                                                            type="number"
+                                                                            className="w-16 text-right bg-white border border-slate-200 rounded px-1 py-0.5 text-xs"
+                                                                            placeholder={order.financials.discountType === 'PERCENTAGE' ? '%' : '$'}
+                                                                            value={order.financials.discountValue || ''}
+                                                                            onChange={(e) => setEditOrderForm(prev => prev ? { ...prev, financials: { ...prev.financials, discountValue: parseInt(e.target.value) } } : null)}
+                                                                        />
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <span className="font-bold text-red-600">-${discountAmount.toLocaleString()}</span>
+                                                    </div>
+
+                                                    <div className="border-t border-slate-200 my-2"></div>
+
                                                     {/* Tax */}
-                                                    <div className="flex justify-between items-center text-slate-500 text-xs">
-                                                        <span>營業稅 (5%)</span>
+                                                    <div className="flex justify-between items-center text-slate-600">
+                                                        <div className="flex items-center gap-2">
+                                                            <span>營業稅 (5%)</span>
+                                                            {isEditing && (
+                                                                <label className="flex items-center gap-1 text-[10px] text-slate-500 cursor-pointer select-none bg-slate-100 px-2 py-0.5 rounded">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={order.financials.isTaxIncluded}
+                                                                        onChange={(e) => {
+                                                                            setEditOrderForm(prev => prev ? { ...prev, financials: { ...prev.financials, isTaxIncluded: e.target.checked } } : null);
+                                                                        }}
+                                                                    /> 加收
+                                                                </label>
+                                                            )}
+                                                        </div>
                                                         <span>${taxAmount.toLocaleString()}</span>
                                                     </div>
 
                                                     {/* Total */}
-                                                    <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg mt-1">
-                                                        <span className="font-bold text-slate-800">含稅總額</span>
-                                                        <span className="font-bold text-indigo-600 text-lg">${totalAmount.toLocaleString()}</span>
+                                                    <div className="flex justify-between items-center bg-slate-800 p-3 rounded-xl mt-2 text-white">
+                                                        <span className="font-bold">應收總額 (Total)</span>
+                                                        <span className="font-bold text-xl">${totalAmount.toLocaleString()}</span>
                                                     </div>
 
                                                     {/* Deposit & Balance */}
@@ -1863,38 +1899,39 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                             <span className="font-bold text-red-600 text-base">${balance.toLocaleString()}</span>
                                                         </div>
                                                     </div>
-
-                                                    {/* Invoice Info */}
-                                                    <div className="bg-indigo-50/50 rounded-lg p-3 mt-3 border border-indigo-100">
-                                                        <div className="flex justify-between items-center mb-2">
-                                                            <span className="text-xs font-bold text-indigo-800 flex items-center gap-1"><Calculator size={12} /> 發票資訊</span>
-                                                            {isEditing && (
-                                                                <label className="flex items-center gap-1 text-[10px] text-slate-500 cursor-pointer select-none">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={order.financials.isInvoiceRequired}
-                                                                        onChange={(e) => setEditOrderForm(prev => prev ? { ...prev, financials: { ...prev.financials, isInvoiceRequired: e.target.checked } } : null)}
-                                                                    /> 需要開立
-                                                                </label>
-                                                            )}
-                                                        </div>
-                                                        {order.financials.isInvoiceRequired ? (
-                                                            <div className="grid grid-cols-2 gap-2">
-                                                                <div>
-                                                                    <label className="text-[10px] text-slate-400 block">公司抬頭</label>
-                                                                    {isEditing ? <input className="w-full bg-white border border-indigo-100 rounded px-1 py-0.5 text-xs" value={order.clientName} readOnly disabled /> : <div className="text-xs font-medium truncate">{order.clientName}</div>}
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-[10px] text-slate-400 block">統一編號 (Tax ID)</label>
-                                                                    {isEditing ? <input className="w-full bg-white border border-indigo-200 rounded px-1 py-0.5 text-xs font-mono" value={order.taxId || ''} onChange={e => setEditOrderForm(prev => prev ? { ...prev, taxId: e.target.value } : null)} placeholder="8碼統編" /> : <div className="text-xs font-mono font-bold text-slate-700">{order.taxId || '未提供'}</div>}
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="text-xs text-slate-400 text-center py-1">不需要統一發票</div>
-                                                        )}
-                                                    </div>
                                                 </div>
                                             </div>
+
+                                            {/* Invoice Info */}
+                                            <div className="bg-indigo-50/50 rounded-lg p-3 mt-3 border border-indigo-100">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="text-xs font-bold text-indigo-800 flex items-center gap-1"><Calculator size={12} /> 發票資訊</span>
+                                                    {isEditing && (
+                                                        <label className="flex items-center gap-1 text-[10px] text-slate-500 cursor-pointer select-none">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={order.financials.isInvoiceRequired}
+                                                                onChange={(e) => setEditOrderForm(prev => prev ? { ...prev, financials: { ...prev.financials, isInvoiceRequired: e.target.checked } } : null)}
+                                                            /> 需要開立
+                                                        </label>
+                                                    )}
+                                                </div>
+                                                {order.financials.isInvoiceRequired ? (
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div>
+                                                            <label className="text-[10px] text-slate-400 block">公司抬頭</label>
+                                                            {isEditing ? <input className="w-full bg-white border border-indigo-100 rounded px-1 py-0.5 text-xs" value={order.clientName} readOnly disabled /> : <div className="text-xs font-medium truncate">{order.clientName}</div>}
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] text-slate-400 block">統一編號 (Tax ID)</label>
+                                                            {isEditing ? <input className="w-full bg-white border border-indigo-200 rounded px-1 py-0.5 text-xs font-mono" value={order.taxId || ''} onChange={e => setEditOrderForm(prev => prev ? { ...prev, taxId: e.target.value } : null)} placeholder="8碼統編" /> : <div className="text-xs font-mono font-bold text-slate-700">{order.taxId || '未提供'}</div>}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-xs text-slate-400 text-center py-1">不需要統一發票</div>
+                                                )}
+                                            </div>
+
 
                                             {/* NEW: Event Flow Section (Unchanged logic, just position shift) */}
                                             <div className="pt-4 border-t border-slate-200">
@@ -2005,7 +2042,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </div >
                 )
             }
 
