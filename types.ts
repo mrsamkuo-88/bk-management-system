@@ -132,6 +132,7 @@ export interface OrderFinancials {
   vendorValueAdded: number; // 廠商加值 (Separate from Service Fee)
   discountType: 'NONE' | 'PERCENTAGE' | 'FIXED'; // 優惠類型
   discountValue: number;    // 優惠數值 (e.g. 10 for 10% off, or 1000 for $1000 off)
+  isManualServiceFee?: boolean; // 新增：是否手動輸入服務費 (不再自動計算)
 }
 
 export interface LogisticsTime {

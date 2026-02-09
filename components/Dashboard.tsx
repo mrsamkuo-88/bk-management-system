@@ -1580,14 +1580,21 @@ const Dashboard: React.FC<DashboardProps> = ({
                                     const mealCost = order.guestCount * order.financials.budgetPerHead;
                                     const vendorValueAdded = order.financials.vendorValueAdded || 0;
 
-                                    // Service Fee Base: Typically just Meal Cost + Vendor Value Added
-                                    const serviceFeeBase = mealCost + vendorValueAdded;
-                                    const serviceFee = order.financials.hasServiceFee
-                                        ? Math.round(serviceFeeBase * 0.1)
-                                        : 0;
-
                                     const shippingFee = order.financials.shippingFee;
                                     const adjustments = order.financials.adjustments || 0;
+
+                                    // Service Fee Base: Meal Cost + Vendor Value Added + Shipping + Adjustments
+                                    const serviceFeeBase = mealCost + vendorValueAdded + shippingFee + adjustments;
+
+                                    // Service Fee Calculation
+                                    let serviceFee = 0;
+                                    if (order.financials.hasServiceFee) {
+                                        if (order.financials.isManualServiceFee) {
+                                            serviceFee = order.financials.serviceFee || 0;
+                                        } else {
+                                            serviceFee = Math.round(serviceFeeBase * 0.1);
+                                        }
+                                    }
 
                                     // Discount Calculation
                                     let discountAmount = 0;
@@ -1805,13 +1812,45 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                                         type="checkbox"
                                                                         checked={order.financials.hasServiceFee}
                                                                         onChange={(e) => {
-                                                                            setEditOrderForm(prev => prev ? { ...prev, financials: { ...prev.financials, hasServiceFee: e.target.checked } } : null);
+                                                                            const isChecked = e.target.checked;
+                                                                            setEditOrderForm(prev => {
+                                                                                if (!prev) return null;
+                                                                                // When checking (enabling), reset to auto by default (set manual to false)
+                                                                                // When unchecking, it just disables.
+                                                                                return {
+                                                                                    ...prev,
+                                                                                    financials: {
+                                                                                        ...prev.financials,
+                                                                                        hasServiceFee: isChecked,
+                                                                                        isManualServiceFee: false
+                                                                                    }
+                                                                                };
+                                                                            });
                                                                         }}
                                                                     /> 啟用
                                                                 </label>
                                                             )}
                                                         </div>
-                                                        <span className="font-bold text-indigo-700">${serviceFee.toLocaleString()}</span>
+                                                        {isEditing && order.financials.hasServiceFee ? (
+                                                            <input
+                                                                type="number"
+                                                                className="w-24 text-right bg-white border border-indigo-200 rounded px-2 py-1 text-sm font-bold text-indigo-700"
+                                                                value={serviceFee}
+                                                                onChange={e => setEditOrderForm(prev => {
+                                                                    if (!prev) return null;
+                                                                    return {
+                                                                        ...prev,
+                                                                        financials: {
+                                                                            ...prev.financials,
+                                                                            serviceFee: parseInt(e.target.value) || 0,
+                                                                            isManualServiceFee: true
+                                                                        }
+                                                                    };
+                                                                })}
+                                                            />
+                                                        ) : (
+                                                            <span className="font-bold text-indigo-700">${serviceFee.toLocaleString()}</span>
+                                                        )}
                                                     </div>
 
                                                     {/* Discount */}
